@@ -175,9 +175,37 @@ class LowLevelServer(_Server[LifespanResultT, RequestT]):
                 # Store task group on session for subscription tasks (SEP-1686)
                 session._subscription_task_group = tg
 
+                async def handle_message_safely(
+                    message: SessionMessage | Exception,
+                    session: MiddlewareServerSession,
+                    lifespan_context: LifespanResultT,
+                    raise_exceptions: bool,
+                ) -> None:
+                    """Wrapper to catch exceptions in message handling and prevent TaskGroup crashes.
+                    
+                    This fixes the "unhandled errors in a TaskGroup" issue that crashes FastMCP servers
+                    when tool calls or other operations raise exceptions.
+                    """
+                    try:
+                        await self._handle_message(
+                            message,
+                            session,
+                            lifespan_context,
+                            raise_exceptions,
+                        )
+                    except Exception as e:
+                        # Log the error but don't crash the TaskGroup
+                        logger.error(
+                            f"Error handling message in FastMCP server: {e}",
+                            exc_info=True,
+                        )
+                        # Only re-raise if explicitly requested (for debugging)
+                        if raise_exceptions:
+                            raise
+
                 async for message in session.incoming_messages:
                     tg.start_soon(
-                        self._handle_message,
+                        handle_message_safely,
                         message,
                         session,
                         lifespan_context,

@@ -109,16 +109,29 @@ async def handle_tool_as_task(
     from fastmcp.server.tasks.subscriptions import subscribe_to_task_updates
 
     # Start subscription in session's task group (persists for connection lifetime)
+    # Wrap in exception handler to prevent TaskGroup crashes
     if hasattr(ctx.session, "_subscription_task_group"):
         tg = ctx.session._subscription_task_group  # type: ignore[attr-defined]
         if tg:
-            tg.start_soon(  # type: ignore[union-attr]
-                subscribe_to_task_updates,
-                server_task_id,
-                task_key,
-                ctx.session,
-                docket,
-            )
+            async def safe_subscribe() -> None:
+                """Wrapper to catch exceptions in subscription tasks."""
+                try:
+                    await subscribe_to_task_updates(
+                        server_task_id,
+                        task_key,
+                        ctx.session,
+                        docket,
+                    )
+                except Exception as e:
+                    # Log but don't crash - subscription failures shouldn't break tool execution
+                    from fastmcp.utilities.logging import get_logger
+                    logger = get_logger(__name__)
+                    logger.warning(
+                        f"Subscription task failed for {server_task_id}: {e}",
+                        exc_info=True,
+                    )
+            
+            tg.start_soon(safe_subscribe)  # type: ignore[union-attr]
 
     # Return task stub
     # Tasks MUST begin in "working" status per SEP-1686 final spec (line 381)
@@ -214,16 +227,29 @@ async def handle_prompt_as_task(
     from fastmcp.server.tasks.subscriptions import subscribe_to_task_updates
 
     # Start subscription in session's task group (persists for connection lifetime)
+    # Wrap in exception handler to prevent TaskGroup crashes
     if hasattr(ctx.session, "_subscription_task_group"):
         tg = ctx.session._subscription_task_group  # type: ignore[attr-defined]
         if tg:
-            tg.start_soon(  # type: ignore[union-attr]
-                subscribe_to_task_updates,
-                server_task_id,
-                task_key,
-                ctx.session,
-                docket,
-            )
+            async def safe_subscribe() -> None:
+                """Wrapper to catch exceptions in subscription tasks."""
+                try:
+                    await subscribe_to_task_updates(
+                        server_task_id,
+                        task_key,
+                        ctx.session,
+                        docket,
+                    )
+                except Exception as e:
+                    # Log but don't crash - subscription failures shouldn't break tool execution
+                    from fastmcp.utilities.logging import get_logger
+                    logger = get_logger(__name__)
+                    logger.warning(
+                        f"Subscription task failed for {server_task_id}: {e}",
+                        exc_info=True,
+                    )
+            
+            tg.start_soon(safe_subscribe)  # type: ignore[union-attr]
 
     # Return task stub
     # Tasks MUST begin in "working" status per SEP-1686 final spec (line 381)
@@ -317,16 +343,29 @@ async def handle_resource_as_task(
     from fastmcp.server.tasks.subscriptions import subscribe_to_task_updates
 
     # Start subscription in session's task group (persists for connection lifetime)
+    # Wrap in exception handler to prevent TaskGroup crashes
     if hasattr(ctx.session, "_subscription_task_group"):
         tg = ctx.session._subscription_task_group  # type: ignore[attr-defined]
         if tg:
-            tg.start_soon(  # type: ignore[union-attr]
-                subscribe_to_task_updates,
-                server_task_id,
-                task_key,
-                ctx.session,
-                docket,
-            )
+            async def safe_subscribe() -> None:
+                """Wrapper to catch exceptions in subscription tasks."""
+                try:
+                    await subscribe_to_task_updates(
+                        server_task_id,
+                        task_key,
+                        ctx.session,
+                        docket,
+                    )
+                except Exception as e:
+                    # Log but don't crash - subscription failures shouldn't break tool execution
+                    from fastmcp.utilities.logging import get_logger
+                    logger = get_logger(__name__)
+                    logger.warning(
+                        f"Subscription task failed for {server_task_id}: {e}",
+                        exc_info=True,
+                    )
+            
+            tg.start_soon(safe_subscribe)  # type: ignore[union-attr]
 
     # Return task stub
     # Tasks MUST begin in "working" status per SEP-1686 final spec (line 381)
